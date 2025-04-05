@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Идеальный баннер</title>
+  <style>
+    body {
+      background: #3b3e31;
+      font-family: sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: #1e1e1e;
+      color: white;
+      padding: 30px;
+      border-radius: 16px;
+      width: 320px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+    }
+    input[type="text"] {
+      outline: none;
+    }
+    button {
+      background-color: #6dad60;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:disabled {
+      background-color: #888;
+      cursor: not-allowed;
+    }
+    .months {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr); /* 2 columns */
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .months label {
+      display: flex;
+      align-items: center;
+    }
+    .months input[type="checkbox"] {
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Идеальный баннер</h2>
+    <label for="participant">Имя участника</label>
+    <input id="participant" type="text" list="participants" placeholder="Выберите или введите имя" autocomplete="off"/>
+    <datalist id="participants"></datalist>
+
+    <div class="months" id="months"></div>
+
+    <div id="fromWhoBlock" style="display: none;">
+      <label for="fromWho">Имя от кого поступает платёж</label>
+      <input type="text" id="fromWho" placeholder="Например: Арман Е." />
+    </div>
+
+    <p><strong>Сумма:</strong> <span id="sum">0₸</span></p>
+    <button id="payButton" disabled>Перейти к оплате</button>
+  </div>
+
+  <script>
+    const names = [
+      "Юля караганда", "Жамал Ақтобе", "Мадина Астана", "Макпал УК фотозона тойб",
+      "Асель заказ шаров", "Лаура город шаров", "Мадок Балхаш", "Анара Костана",
+      "Алия Екибастуз", "Гульназ Актобе", "Арай Алматы", "Айнур Астана",
+      "Мадина шар баннер", "Аккумис Атырау", "Айжан Бомбашоу Талдык уч", "Мадина Баянаул",
+      "Тогжан Манзорова Талдыкорган", "Бота Астана", "Аяулым Курчум", "Карина Екибастуз Наталья",
+      "Гаухар Канал Астана", "Динара Дизайнер", "Гульназ Усть-камен Манапова", "Наталья новоишим фея",
+      "Вероника Дуэт", "Алтынай Усть-камен crazy", "Жанар Алматы", "Мадина дизайнер Ернар",
+      "Ольга Жетикара", "Маржан Калбатау", "Гульназ Алматы", "Аида Екибастуз",
+      "Арманай Караганда", "Эльмира Каскелен", "Гулимжан Астана", "Жансулу Кордай мыло",
+      "Арайлым Астана", "Толганай Талгар", "Жанаргуль Костанай", "Аия Киндер",
+      "Тойбастар Динара", "Енлик Алматы", "Ардак Тарбагатай", "Айжан УК",
+      "Мадина Екибастуз", "Мадина Нуркожа Кызылорда", "Алуаш Караганда", "Дарига Талгар",
+      "Айкумис Бесагаш", "Анель Талдыкорган", "Лаура Есиль", "Улжан Уля",
+      "Шарленд Тараз Салтанат", "Асель кулсары", "Жибек Костанай", "Гаухар Алматы Шары",
+      "Айсара Астана", "Алеся Кокшетау", "Зарина новый поток", "Светлана сарозек",
+      "Айгерим Атбасар", "Сауле ученица сентьябр", "Акнур Астана ученица", "Анастасия свад шучинск",
+      "Мона Алматы Тедди", "Дарига павлодар", "Алия Шымкент", "Инжу Атырау",
+      "Айдана шарики парасате", "Ажар атырау", "Айнур Кулсары", "Самал Ускемен",
+      "Мейірбек Орал", "Шолпан Кызылорда", "Анель Конаев", "Айсулу Ярмарка",
+      "Гуля баннер актау", "Абзал Балхаш", "Лена Алматы", "Гузаль Актау",
+      "Мурат Атырау", "Назира Алматы", "Балгын Астана", "Назерке Караганда",
+      "Камила Астана", "Сымбат Байтас", "Назгуль Талдык", "Кристина Алматы",
+      "Алия Жалтыр", "Аслан Алматы", "Абылай Алматы", "Гаухар Актау"
+    ];
+
+    const monthsList = [
+      "Апрель", "Май", "Июнь", "Июль",
+      "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
+    ];
+    const currentYear = 2025;
+
+    const participantInput = document.getElementById("participant");
+    const datalist = document.getElementById("participants");
+    const fromWhoBlock = document.getElementById("fromWhoBlock");
+    const payButton = document.getElementById("payButton");
+    const sumEl = document.getElementById("sum");
+
+    const monthsContainer = document.getElementById("months");
+
+    monthsList.forEach(month => {
+      const label = document.createElement("label");
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.value = month;
+      checkbox.onchange = updateSumAndValidation;
+      label.appendChild(checkbox);
+      label.append(` ${month} ${currentYear}`);
+      monthsContainer.appendChild(label);
+    });
+
+    participantInput.addEventListener("input", () => {
+      const value = participantInput.value.toLowerCase();
+      datalist.innerHTML = "";
+      if (!value) return;
+      const filtered = names.filter(name => name.toLowerCase().includes(value)).slice(0, 3);
+      filtered.forEach(name => {
+        const option = document.createElement("option");
+        option.value = name;
+        datalist.appendChild(option);
+      });
+      updateSumAndValidation();
+    });
+
+    function updateSumAndValidation() {
+      const checked = monthsContainer.querySelectorAll("input:checked").length;
+      const nameValid = names.includes(participantInput.value.trim());
+      sumEl.innerText = `${checked * 1000}₸`;
+      fromWhoBlock.style.display = checked ? "block" : "none";
+      payButton.disabled = !(nameValid && checked);
+    }
+
+    document.getElementById("payButton").addEventListener("click", function() {
+      const participantName = participantInput.value.trim();
+      const selectedMonths = Array.from(monthsContainer.querySelectorAll("input:checked")).map(input => input.value);
+      const fromWho = document.getElementById("fromWho").value.trim();
+      const sum = selectedMonths.length * 1000;
+
+      if (names.includes(participantName) && selectedMonths.length > 0) {
+        const data = {
+          name: participantName,
+          month: selectedMonths.join(", "),
+          from: fromWho,
+          amount: sum
+        };
+
+        // Ссылка на твой Google Apps Script веб-приложение
+        const url = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";  // Замените на свой ID
+
+        fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        })
+        .then(response => response.text())
+        .then(result => {
+          alert("Данные успешно отправлены");
+          window.location.href = "https://pay.kaspi.kz/pay/ecgq6kmy"; // Переход к оплате
+        })
+        .catch(error => {
+          console.error("Ошибка при отправке данных:", error);
+          alert("Ошибка при отправке данных. Пожалуйста, попробуйте еще раз.");
+        });
+      } else {
+        alert("Пожалуйста, заполните все поля.");
+      }
+    });
+  </script>
+</body>
+</html>
