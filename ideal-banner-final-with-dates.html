@@ -2,190 +2,145 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Идеальный баннер</title>
   <style>
     body {
-      background: #3b3e31;
       font-family: sans-serif;
+      background-color: #3b4422;
+      color: white;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
+      padding: 40px;
     }
-    .container {
-      background: #1e1e1e;
-      color: white;
-      padding: 30px;
-      border-radius: 16px;
-      width: 320px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.4);
-    }
-    input, button {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 8px;
+    .hidden { display: none; }
+    .button {
+      padding: 10px 20px;
+      margin: 10px;
+      background-color: #556b2f;
       border: none;
-      font-size: 16px;
-    }
-    input[type="text"] {
-      outline: none;
-    }
-    button {
-      background-color: #6dad60;
+      border-radius: 10px;
       color: white;
-      font-weight: bold;
+      font-size: 16px;
       cursor: pointer;
     }
-    button:disabled {
-      background-color: #888;
-      cursor: not-allowed;
+    select, input[type="checkbox"] {
+      font-size: 16px;
+      margin: 10px 0;
     }
-    .months {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr); /* 2 columns */
-      gap: 10px;
-      margin-bottom: 10px;
+    .admin-table {
+      margin-top: 20px;
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 500px;
     }
-    .months label {
-      display: flex;
-      align-items: center;
-    }
-    .months input[type="checkbox"] {
-      margin-right: 10px;
+    .admin-table th, .admin-table td {
+      border: 1px solid white;
+      padding: 8px;
+      text-align: left;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Идеальный баннер</h2>
-    <label for="participant">Имя участника</label>
-    <input id="participant" type="text" list="participants" placeholder="Выберите или введите имя" autocomplete="off"/>
-    <datalist id="participants"></datalist>
+  <h1>Идеальный баннер</h1>
+  <div id="main-buttons">
+    <button class="button" onclick="showUserPanel()">Участник</button>
+    <button class="button" onclick="showLogin()">Админ</button>
+  </div>
 
-    <div class="months" id="months"></div>
+  <!-- Участник -->
+  <div id="user-panel" class="hidden">
+    <h2>Выберите имя</h2>
+    <select id="user-name">
+      <option value="">-- выбрать --</option>
+      <option value="Алтынай Алматы">Алтынай Алматы</option>
+      <option value="Гаухар шары">Гаухар шары</option>
+      <option value="Жанар Алматы">Жанар Алматы</option>
+    </select>
 
-    <div id="fromWhoBlock" style="display: none;">
-      <label for="fromWho">Имя от кого поступает платёж</label>
-      <input type="text" id="fromWho" placeholder="Например: Арман Е." />
-    </div>
+    <h3>За какие месяцы:</h3>
+    <label><input type="checkbox" value="Январь"> Январь</label><br>
+    <label><input type="checkbox" value="Февраль"> Февраль</label><br>
+    <label><input type="checkbox" value="Март"> Март</label><br>
+    <label><input type="checkbox" value="Апрель"> Апрель</label><br>
 
-    <p><strong>Сумма:</strong> <span id="sum">0₸</span></p>
-    <button id="payButton" disabled>Перейти к оплате</button>
+    <button class="button" onclick="payNow()">Оплатить</button>
+    <button id="confirm-paid" class="button hidden" onclick="submitPayment()">Я оплатил</button>
+  </div>
+
+  <!-- Админ -->
+  <div id="admin-login" class="hidden">
+    <h2>Вход для админа</h2>
+    <input id="admin-user" placeholder="Логин" />
+    <input id="admin-pass" placeholder="Пароль" type="password" />
+    <button class="button" onclick="checkAdmin()">Войти</button>
+  </div>
+
+  <div id="admin-panel" class="hidden">
+    <h2>Оплаты</h2>
+    <table class="admin-table">
+      <thead>
+        <tr><th>Имя</th><th>Месяцы</th><th>Дата</th></tr>
+      </thead>
+      <tbody id="payment-list"></tbody>
+    </table>
   </div>
 
   <script>
-    const names = [
-      "Юля караганда", "Жамал Ақтобе", "Мадина Астана", "Макпал УК фотозона тойб",
-      "Асель заказ шаров", "Лаура город шаров", "Мадок Балхаш", "Анара Костана",
-      "Алия Екибастуз", "Гульназ Актобе", "Арай Алматы", "Айнур Астана",
-      "Мадина шар баннер", "Аккумис Атырау", "Айжан Бомбашоу Талдык уч", "Мадина Баянаул",
-      "Тогжан Манзорова Талдыкорган", "Бота Астана", "Аяулым Курчум", "Карина Екибастуз Наталья",
-      "Гаухар Канал Астана", "Динара Дизайнер", "Гульназ Усть-камен Манапова", "Наталья новоишим фея",
-      "Вероника Дуэт", "Алтынай Усть-камен crazy", "Жанар Алматы", "Мадина дизайнер Ернар",
-      "Ольга Жетикара", "Маржан Калбатау", "Гульназ Алматы", "Аида Екибастуз",
-      "Арманай Караганда", "Эльмира Каскелен", "Гулимжан Астана", "Жансулу Кордай мыло",
-      "Арайлым Астана", "Толганай Талгар", "Жанаргуль Костанай", "Аия Киндер",
-      "Тойбастар Динара", "Енлик Алматы", "Ардак Тарбагатай", "Айжан УК",
-      "Мадина Екибастуз", "Мадина Нуркожа Кызылорда", "Алуаш Караганда", "Дарига Талгар",
-      "Айкумис Бесагаш", "Анель Талдыкорган", "Лаура Есиль", "Улжан Уля",
-      "Шарленд Тараз Салтанат", "Асель кулсары", "Жибек Костанай", "Гаухар Алматы Шары",
-      "Айсара Астана", "Алеся Кокшетау", "Зарина новый поток", "Светлана сарозек",
-      "Айгерим Атбасар", "Сауле ученица сентьябр", "Акнур Астана ученица", "Анастасия свад шучинск",
-      "Мона Алматы Тедди", "Дарига павлодар", "Алия Шымкент", "Инжу Атырау",
-      "Айдана шарики парасате", "Ажар атырау", "Айнур Кулсары", "Самал Ускемен",
-      "Мейірбек Орал", "Шолпан Кызылорда", "Анель Конаев", "Айсулу Ярмарка",
-      "Гуля баннер актау", "Абзал Балхаш", "Лена Алматы", "Гузаль Актау",
-      "Мурат Атырау", "Назира Алматы", "Балгын Астана", "Назерке Караганда",
-      "Камила Астана", "Сымбат Байтас", "Назгуль Талдык", "Кристина Алматы",
-      "Алия Жалтыр", "Аслан Алматы", "Абылай Алматы", "Гаухар Актау"
-    ];
-
-    const monthsList = [
-      "Апрель", "Май", "Июнь", "Июль",
-      "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
-    ];
-    const currentYear = 2025;
-
-    const participantInput = document.getElementById("participant");
-    const datalist = document.getElementById("participants");
-    const fromWhoBlock = document.getElementById("fromWhoBlock");
-    const payButton = document.getElementById("payButton");
-    const sumEl = document.getElementById("sum");
-
-    const monthsContainer = document.getElementById("months");
-
-    monthsList.forEach(month => {
-      const label = document.createElement("label");
-      const checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.value = month;
-      checkbox.onchange = updateSumAndValidation;
-      label.appendChild(checkbox);
-      label.append(` ${month} ${currentYear}`);
-      monthsContainer.appendChild(label);
-    });
-
-    participantInput.addEventListener("input", () => {
-      const value = participantInput.value.toLowerCase();
-      datalist.innerHTML = "";
-      if (!value) return;
-      const filtered = names.filter(name => name.toLowerCase().includes(value)).slice(0, 3);
-      filtered.forEach(name => {
-        const option = document.createElement("option");
-        option.value = name;
-        datalist.appendChild(option);
-      });
-      updateSumAndValidation();
-    });
-
-    function updateSumAndValidation() {
-      const checked = monthsContainer.querySelectorAll("input:checked").length;
-      const nameValid = names.includes(participantInput.value.trim());
-      sumEl.innerText = `${checked * 1000}₸`;
-      fromWhoBlock.style.display = checked ? "block" : "none";
-      payButton.disabled = !(nameValid && checked);
+    function showUserPanel() {
+      document.getElementById('main-buttons').classList.add('hidden');
+      document.getElementById('user-panel').classList.remove('hidden');
     }
 
-    document.getElementById("payButton").addEventListener("click", function() {
-      const participantName = participantInput.value.trim();
-      const selectedMonths = Array.from(monthsContainer.querySelectorAll("input:checked")).map(input => input.value);
-      const fromWho = document.getElementById("fromWho").value.trim();
-      const sum = selectedMonths.length * 1000;
+    function showLogin() {
+      document.getElementById('main-buttons').classList.add('hidden');
+      document.getElementById('admin-login').classList.remove('hidden');
+    }
 
-      if (names.includes(participantName) && selectedMonths.length > 0) {
-        const data = {
-          name: participantName,
-          month: selectedMonths.join(", "),
-          from: fromWho,
-          amount: sum
-        };
+    function payNow() {
+      const name = document.getElementById('user-name').value;
+      if (!name) return alert('Выберите имя');
+      window.open('https://pay.kaspi.kz/pay/ecgq6kmy', '_blank');
+      document.getElementById('confirm-paid').classList.remove('hidden');
+    }
 
-        // Ссылка на твой Google Apps Script веб-приложение
-        const url = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";  // Замените на свой ID
+    function submitPayment() {
+      const name = document.getElementById('user-name').value;
+      const checkboxes = document.querySelectorAll('#user-panel input[type="checkbox"]:checked');
+      const months = Array.from(checkboxes).map(cb => cb.value).join(', ');
+      const date = new Date().toLocaleString();
 
-        fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(data)
-        })
-        .then(response => response.text())
-        .then(result => {
-          alert("Данные успешно отправлены");
-          window.location.href = "https://pay.kaspi.kz/pay/ecgq6kmy"; // Переход к оплате
-        })
-        .catch(error => {
-          console.error("Ошибка при отправке данных:", error);
-          alert("Ошибка при отправке данных. Пожалуйста, попробуйте еще раз.");
-        });
+      const entry = { name, months, date };
+      const stored = JSON.parse(localStorage.getItem('payments') || '[]');
+      stored.push(entry);
+      localStorage.setItem('payments', JSON.stringify(stored));
+
+      alert('Спасибо за оплату!');
+      location.reload();
+    }
+
+    function checkAdmin() {
+      const user = document.getElementById('admin-user').value;
+      const pass = document.getElementById('admin-pass').value;
+      if (user === 'Admin' && pass === '3003') {
+        document.getElementById('admin-login').classList.add('hidden');
+        document.getElementById('admin-panel').classList.remove('hidden');
+        loadPayments();
       } else {
-        alert("Пожалуйста, заполните все поля.");
+        alert('Неверный логин или пароль');
       }
-    });
+    }
+
+    function loadPayments() {
+      const payments = JSON.parse(localStorage.getItem('payments') || '[]');
+      const tbody = document.getElementById('payment-list');
+      tbody.innerHTML = '';
+      payments.forEach(p => {
+        const row = `<tr><td>${p.name}</td><td>${p.months}</td><td>${p.date}</td></tr>`;
+        tbody.innerHTML += row;
+      });
+    }
   </script>
 </body>
 </html>
